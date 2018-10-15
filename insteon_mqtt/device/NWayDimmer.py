@@ -8,9 +8,9 @@
 from .Base import Base
 from .Dimmer import Dimmer
 from .. import log
-from ..Signal import Signal
-from ..CommandSeq import CommandSeq
 from .. import util
+from ..CommandSeq import CommandSeq
+from ..Signal import Signal
 
 LOG = log.get_logger()
 
@@ -78,7 +78,8 @@ class NWayDimmer(Base):
           name         (str) Nice alias name to use for the device.
         """
         # Important note here is that this 'device' is a psuedo device, and
-        # so doesn't actually have an address. I'm not sure how that best fits into things
+        # so doesn't actually have an address. I'm not sure how that best
+        # fits into things
         super().__init__(protocol, modem, primary, name)
 
         # Current dimming level. 0x00 -> 0xff
@@ -95,7 +96,8 @@ class NWayDimmer(Base):
                 modem,
                 secondaries[i],
                 None if name is None else "%s-secondary-%d".format(name, i)
-            ) for i in range(0, len(secondaries))  # indexed for-comprehension to give each secondary a unique name
+            ) for i in range(0, len(secondaries))  # indexed for-comprehension
+            # to give each secondary a unique name
         }
 
         self._devices[self._primary] = Dimmer(
@@ -108,7 +110,7 @@ class NWayDimmer(Base):
         # Support dimmer style signals and motion on/off style signals.
         self.signal_level_changed = Signal()  # (Device, level)
 
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     def pair(self, on_done=None):
         """Pair the device with the modem.
 
@@ -153,7 +155,7 @@ class NWayDimmer(Base):
         # # will chain everything together.
         # seq.run()
 
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     def on(self, group=0x01, level=0xff, instant=False, on_done=None):
         """Turn the device on.
 
@@ -172,13 +174,13 @@ class NWayDimmer(Base):
         assert group == 0x01
 
         seq = CommandSeq(self.protocol, "Sub devices set to on", on_done)
-        
+
         for addr, device in self._devices:
             seq.add(device.on, group, level, instant)
-        
+
         seq.run()
 
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     def off(self, group=0x01, instant=False, on_done=None):
         """Turn the device off.
 
@@ -200,7 +202,7 @@ class NWayDimmer(Base):
 
         seq.run()
 
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     def set(self, level, group=0x01, instant=False, on_done=None):
         """Set the device on or off.
 
@@ -223,7 +225,7 @@ class NWayDimmer(Base):
         else:
             self.off(group, instant, on_done)
 
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     def scene(self, is_on, group=0x01, on_done=None):
         """TODO: doc
         """
@@ -237,7 +239,7 @@ class NWayDimmer(Base):
 
         seq.run()
 
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     def increment_up(self, on_done=None):
         """Increment the current level up.
 
@@ -249,14 +251,14 @@ class NWayDimmer(Base):
         """
         LOG.info("Dimmer %s cmd: increment up", self.addr)
 
-        seq = CommandSeq(self.protocol, "Sub devices incrementing up", on_done)
+        seq = CommandSeq(self.protocol, "Sub devices incremented up", on_done)
 
         for addr, device in self._devices:
             seq.add(device.increment_up)
 
         seq.run()
 
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     def increment_down(self, on_done=None):
         """Increment the current level down.
 
@@ -268,14 +270,14 @@ class NWayDimmer(Base):
         """
         LOG.info("Dimmer %s cmd: increment down", self.addr)
 
-        seq = CommandSeq(self.protocol, "Sub devices incrementing down", on_done)
+        seq = CommandSeq(self.protocol, "Sub devices increment down", on_done)
 
         for addr, device in self._devices:
             seq.add(device.increment_down)
 
         seq.run()
 
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     def set_backlight(self, level, on_done=None):
         """TODO: doc
 
@@ -290,7 +292,7 @@ class NWayDimmer(Base):
 
         seq.run()
 
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     def set_on_level(self, level, on_done=None):
         """TODO: doc
 
@@ -298,14 +300,14 @@ class NWayDimmer(Base):
         """
         LOG.info("Dimmer %s setting on level to %s", self.label, level)
 
-        seq = CommandSeq(self.protocol, "Sub devices setting on level", on_done)
+        seq = CommandSeq(self.protocol, "Sub devices set on level", on_done)
 
         for addr, device in self._devices:
             seq.add(device.set_on_level, level)
 
         seq.run()
 
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     def set_flags(self, on_done, **kwargs):
         """TODO: doc
         valid kwargs:
