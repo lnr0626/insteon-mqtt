@@ -40,6 +40,7 @@ devices = {
     device.Remote : Remote,
     device.SmokeBridge : SmokeBridge,
     device.Switch : Switch,
+    device.NWayDimmer : Dimmer,
     }
 
 

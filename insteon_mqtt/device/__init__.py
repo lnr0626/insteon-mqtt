@@ -28,6 +28,7 @@ first (hold the modem set button, then the device.
 
 from .Base import Base
 from .BatterySensor import BatterySensor
+from .NWayDimmer import NWayDimmer
 from .Dimmer import Dimmer
 from .FanLinc import FanLinc
 from .IOLinc import IOLinc

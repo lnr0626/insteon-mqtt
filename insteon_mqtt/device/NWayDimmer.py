@@ -65,6 +65,31 @@ class NWayDimmer:
     is used to de-conflict state.
     """
 
+    @classmethod
+    def from_config(cls, values, protocol, modem, **kwargs):
+        """TODO: doc
+        """
+        devices = []
+        for config in values:
+            # NWayDimmers require configs to be dicts
+            assert isinstance(config, dict)
+            primary = config['primary']
+            secondaries = config['secondaries']
+            if secondaries is None:
+                secondaries = []
+            name = config['name']
+            if name is not None:
+                name = name.lower()
+
+            # Create the device using the class constructor.  Use kwargs
+            # syntax so any extra keyword args don't have to be at the end of
+            # the arg list.
+            device = cls(protocol=protocol, modem=modem, primary=primary,
+                         secondaries=secondaries, name=name, **kwargs)
+            devices.append(device)
+
+        return devices
+
     def __init__(self, protocol, modem, primary, secondaries=None, name=None):
         """Constructor
 

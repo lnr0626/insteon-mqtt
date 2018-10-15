@@ -17,6 +17,7 @@ devices = {
     # Key is config file input.  Value is tuple of (class, **kwargs) of the
     # class to use and any extra keyword args to pass to the constructor.
     'dimmer' : (device.Dimmer, {}),
+    'n_way_dimmer': (device.Dimmer, {}),
     'battery_sensor' : (device.BatterySensor, {}),
     'fan_linc' : (device.FanLinc, {}),
     'io_linc' : (device.IOLinc, {}),
