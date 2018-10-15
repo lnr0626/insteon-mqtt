@@ -5,7 +5,6 @@
 # into a single pseudo dimmer, or n-way dimmer.
 #
 # ===========================================================================
-from .Base import Base
 from .Dimmer import Dimmer
 from .. import log
 from .. import util
@@ -15,7 +14,7 @@ from ..Signal import Signal
 LOG = log.get_logger()
 
 
-class NWayDimmer(Base):
+class NWayDimmer:
     """Insteon n-way dimmer device.
 
     This aggregates multiple insteon dimmer devices (See Dimmer for more
@@ -75,17 +74,17 @@ class NWayDimmer(Base):
                        the device to send messages to the PLM modem.
           modem:       (Modem) The Insteon modem used to find other devices.
           primary:     (Address) The address of the device.
-          name         (str) Nice alias name to use for the device.
+          secondaries: (List<Address>) List of addresses which also control this device.
+          name:        (str) Nice alias name to use for the device.
         """
-        # Important note here is that this 'device' is a psuedo device, and
-        # so doesn't actually have an address. I'm not sure how that best
-        # fits into things
-        super().__init__(protocol, modem, primary, name)
 
         # Current dimming level. 0x00 -> 0xff
         self._level = 0x00
 
         self._primary = primary
+
+        self.modem = modem
+        self.protocol = protocol;
 
         if secondaries is None:  # Don't provide a mutable default argument
             secondaries = []
@@ -107,6 +106,11 @@ class NWayDimmer(Base):
             None if name is None else "%s-primary".format(name)
         )
 
+        for _, device in self._devices:
+            self.modem.signal_new_device.emit(self.modem, device)
+            device.signal_level_changed.connect(
+                self.handle_device_level_changed)
+
         # Support dimmer style signals and motion on/off style signals.
         self.signal_level_changed = Signal()  # (Device, level)
 
@@ -123,37 +127,23 @@ class NWayDimmer(Base):
         database.
         """
         LOG.error("Device %s doesn't support pairing yet", self.label)
-        # LOG.info("Dimmer %s pairing", self.addr)
-        #
-        # # Build a sequence of calls to the do the pairing.  This insures each
-        # # call finishes and works before calling the next one.  We have to do
-        # # this for device db manipulation because we need to know the memory
-        # # layout on the device before making changes.
-        # seq = CommandSeq(self.protocol, "Dimmer paired", on_done)
-        #
-        # # Start with a refresh command - since we're changing the db, it must
-        # # be up to date or bad things will happen.
-        # seq.add(self.refresh)
-        #
-        # # Add the device as a responder to the modem on group 1.  This is
-        # # probably already there - and maybe needs to be there before we can
-        # # even issue any commands but this check insures that the link is
-        # # present on the device and the modem.
-        # seq.add(self.db_add_resp_of, 0x01, self.modem.addr, 0x01,
-        #         refresh=False)
-        #
-        # # Now add the device as the controller of the modem for group 1.
-        # # This lets the modem receive updates about the button presses and
-        # # state changes.
-        # seq.add(self.db_add_ctrl_of, 0x01, self.modem.addr, 0x01,
-        #         refresh=False)
-        #
-        # # For scene simulation, the modem
-        #
-        # # Finally start the sequence running.  This will return so the
-        # # network event loop can process everything and the on_done callbacks
-        # # will chain everything together.
-        # seq.run()
+        LOG.info("N-Way Dimmer pairing all sub devices")
+
+        seq = CommandSeq(self.protocol, "N-Way dimmer paired", on_done)
+
+        for _, device in self._devices:
+            # 1 - call pair on all managed devices
+            # 2 - pair all managed devices with each other as appropriate for an
+            #       n-way dimmer
+            seq.add(device.pair)
+
+            for _, other in self._devices:
+                if other is not device:
+                    seq.add(device.db_add_resp_of, 0x01, other.addr, 0x01,
+                            refresh=False)
+                    seq.add(device.db_add_ctrl_of, 0x01, other.addr, 0x01,
+                            refresh=False)
+        seq.run()
 
     # -----------------------------------------------------------------------
     def on(self, group=0x01, level=0xff, instant=False, on_done=None):
@@ -334,3 +324,9 @@ class NWayDimmer(Base):
             seq.add(self.set_on_level, on_level)
 
         seq.run()
+
+    # -----------------------------------------------------------------------
+    def handle_device_level_changed(self, device, level):
+        if self._level != level:
+            self._level = level
+            self.signal_level_changed.emit(self, level)
